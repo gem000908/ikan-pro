@@ -1,8 +1,8 @@
 // ==UserScript==
 // @name         ikanbot 播放器增强
 // @namespace    https://www1.ikanbot.com/
-// @version      1.1.0
-// @description  为 ikanbot 播放页增加前后 10 秒跳转和按影片保存的观看进度
+// @version      1.2.0
+// @description  增强 ikanbot 播放控制、观看进度，并隐藏已识别的播放器右下角广告
 // @match        https://www1.ikanbot.com/play/*
 // @run-at       document-start
 // @grant        none
@@ -327,6 +327,8 @@
 
     function syncPlayer() {
       syncQueued = false;
+      const players = documentObject.querySelectorAll('.video-js');
+      players.forEach(hidePlayerAds);
       const controlBars = documentObject.querySelectorAll('.video-js .vjs-control-bar');
       controlBars.forEach(ensureButtons);
       if (!currentVideo || !currentVideo.isConnected) {
@@ -346,7 +348,10 @@
     function startObserver() {
       const style = documentObject.createElement('style');
       style.setAttribute('data-ikanbot-player-enhancer', '');
-      style.textContent = '.ikanbot-seek-button .ikanbot-seek-label{font-size:1.15em;font-weight:600;line-height:1;white-space:nowrap}';
+      style.textContent = [
+        '.ikanbot-seek-button .ikanbot-seek-label{font-size:1.15em;font-weight:600;line-height:1;white-space:nowrap}',
+        `[${HIDDEN_AD_ATTRIBUTE}]{display:none!important}`,
+      ].join('');
       (documentObject.head || documentObject.documentElement).appendChild(style);
 
       const observer = new windowObject.MutationObserver(scheduleSync);

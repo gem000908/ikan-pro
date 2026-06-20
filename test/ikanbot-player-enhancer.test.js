@@ -332,3 +332,50 @@ test('player synchronization does not mutate an already enhanced control bar', (
   assert.equal(insertionCount, 2);
   assert.equal(microtasks.length, 0);
 });
+
+test('bootstrap hides a matching ad during initial and mutation-driven synchronization', () => {
+  const microtasks = [];
+  let mutationCallback = null;
+  const player = adElement({ text: '', box: rect(0, 0, 1000, 500) });
+  const firstAd = adElement({ text: '60323.com', box: rect(700, 320, 200, 100) });
+  firstAd.parentElement = player;
+  const candidates = [firstAd];
+  player.querySelectorAll = selector => selector === '*' ? candidates : [];
+  player.querySelector = () => null;
+
+  const documentObject = {
+    documentElement: {},
+    head: { appendChild() {} },
+    visibilityState: 'visible',
+    createElement() {
+      return { setAttribute() {}, textContent: '' };
+    },
+    addEventListener() {},
+    querySelectorAll(selector) {
+      if (selector === '.video-js') return [player];
+      return [];
+    },
+    querySelector() { return null; },
+  };
+  const windowObject = {
+    location: { href: 'https://www1.ikanbot.com/play/ad-test' },
+    localStorage: memoryStorage(),
+    MutationObserver: class {
+      constructor(callback) { mutationCallback = callback; }
+      observe() {}
+    },
+    queueMicrotask: callback => microtasks.push(callback),
+    addEventListener() {},
+    setInterval() {},
+  };
+
+  bootstrap(windowObject, documentObject);
+  assert.equal(firstAd.hasAttribute('data-ikanbot-hidden-ad'), true);
+
+  const secondAd = adElement({ text: '官网 60323.com', box: rect(680, 300, 240, 120) });
+  secondAd.parentElement = player;
+  candidates.push(secondAd);
+  mutationCallback();
+  microtasks.shift()();
+  assert.equal(secondAd.hasAttribute('data-ikanbot-hidden-ad'), true);
+});
