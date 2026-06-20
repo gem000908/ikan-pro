@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         ikanbot 播放器增强
 // @namespace    https://www1.ikanbot.com/
-// @version      1.0.0
+// @version      1.1.0
 // @description  为 ikanbot 播放页增加前后 10 秒跳转和按影片保存的观看进度
 // @match        https://www1.ikanbot.com/play/*
 // @run-at       document-start
@@ -60,6 +60,37 @@
     try {
       return typeof target.closest === 'function'
         && Boolean(target.closest('[contenteditable=""], [contenteditable="true"], [contenteditable="plaintext-only"]'));
+    } catch (_error) {
+      return false;
+    }
+  }
+
+  function isInteractiveTarget(target) {
+    if (!target) return false;
+    const nodeName = String(target.nodeName || '').toUpperCase();
+    if (nodeName === 'BUTTON' || nodeName === 'A') return true;
+
+    try {
+      return typeof target.closest === 'function'
+        && Boolean(target.closest('button, a, [role="button"]'));
+    } catch (_error) {
+      return false;
+    }
+  }
+
+  function togglePlayback(video) {
+    if (!video) return false;
+
+    try {
+      if (!video.paused && !video.ended) {
+        if (typeof video.pause !== 'function') return false;
+        video.pause();
+        return true;
+      }
+      if (typeof video.play !== 'function') return false;
+      const playResult = video.play();
+      if (playResult && typeof playResult.catch === 'function') playResult.catch(() => {});
+      return true;
     } catch (_error) {
       return false;
     }
@@ -237,15 +268,21 @@
 
     documentObject.addEventListener('keydown', (event) => {
       if (event.defaultPrevented || event.altKey || event.ctrlKey || event.metaKey) return;
-      if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') return;
+
+      const isArrowKey = event.key === 'ArrowLeft' || event.key === 'ArrowRight';
+      const isSpaceKey = event.code === 'Space' || event.key === ' ' || event.key === 'Spacebar';
+      if (!isArrowKey && !isSpaceKey) return;
       if (isEditableTarget(event.target)) return;
+      if (isSpaceKey && isInteractiveTarget(event.target)) return;
 
       const video = currentVideo && currentVideo.isConnected
         ? currentVideo
         : documentObject.querySelector('.video-js video');
       if (!video) return;
+
       event.preventDefault();
-      seekBy(video, event.key === 'ArrowLeft' ? -10 : 10);
+      if (isSpaceKey) togglePlayback(video);
+      else seekBy(video, event.key === 'ArrowLeft' ? -10 : 10);
     });
 
     documentObject.addEventListener('visibilitychange', () => {
@@ -266,6 +303,8 @@
     makeStorageKey,
     seekBy,
     isEditableTarget,
+    isInteractiveTarget,
+    togglePlayback,
     shouldClearProgress,
     readProgress,
     writeProgress,

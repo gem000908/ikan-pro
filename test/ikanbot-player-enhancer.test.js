@@ -7,6 +7,8 @@ const {
   makeStorageKey,
   seekBy,
   isEditableTarget,
+  isInteractiveTarget,
+  togglePlayback,
   shouldClearProgress,
   readProgress,
   writeProgress,
@@ -107,6 +109,38 @@ test('does not restore progress below five seconds', () => {
   const video = { currentTime: 0, duration: 100, ended: false };
   assert.equal(restoreProgress(storage, 'key', video), false);
   assert.equal(video.currentTime, 0);
+});
+
+test('treats buttons, links, and button roles as interactive targets', () => {
+  assert.equal(isInteractiveTarget({ nodeName: 'BUTTON', closest: () => null }), true);
+  assert.equal(isInteractiveTarget({ nodeName: 'A', closest: () => null }), true);
+  assert.equal(isInteractiveTarget({ nodeName: 'DIV', closest: () => ({}) }), true);
+  assert.equal(isInteractiveTarget({ nodeName: 'DIV', closest: () => null }), false);
+});
+
+test('pauses a playing video', () => {
+  let pauseCalls = 0;
+  const video = { paused: false, ended: false, pause() { pauseCalls += 1; } };
+  assert.equal(togglePlayback(video), true);
+  assert.equal(pauseCalls, 1);
+});
+
+test('plays a paused or ended video', () => {
+  let playCalls = 0;
+  const video = { paused: true, ended: false, play() { playCalls += 1; } };
+  assert.equal(togglePlayback(video), true);
+  assert.equal(playCalls, 1);
+});
+
+test('handles rejected play promises without an unhandled rejection', async () => {
+  const video = { paused: true, ended: false, play() { return Promise.reject(new Error('blocked')); } };
+  assert.equal(togglePlayback(video), true);
+  await new Promise((resolve) => setImmediate(resolve));
+});
+
+test('ignores an invalid playback target', () => {
+  assert.equal(togglePlayback(null), false);
+  assert.equal(togglePlayback({ paused: true }), false);
 });
 
 test('player synchronization does not mutate an already enhanced control bar', () => {
