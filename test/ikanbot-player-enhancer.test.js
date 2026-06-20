@@ -5,6 +5,8 @@ const assert = require('node:assert/strict');
 const {
   getPageId,
   makeStorageKey,
+  isKnownAdText,
+  isBottomRightAdCandidate,
   seekBy,
   isEditableTarget,
   isInteractiveTarget,
@@ -25,6 +27,10 @@ function memoryStorage(initial = {}) {
   };
 }
 
+function rect(left, top, width, height) {
+  return { left, top, right: left + width, bottom: top + height, width, height };
+}
+
 test('extracts the play-page id', () => {
   assert.equal(getPageId('https://www1.ikanbot.com/play/12345.html'), '12345.html');
 });
@@ -36,6 +42,37 @@ test('rejects URLs outside the exact play-page scope', () => {
 
 test('creates an encoded, namespaced storage key', () => {
   assert.equal(makeStorageKey('show/第 1 集'), 'ikanbot-player-progress:show%2F%E7%AC%AC%201%20%E9%9B%86');
+});
+
+test('recognizes the known advertisement domain despite whitespace and case', () => {
+  assert.equal(isKnownAdText('官网 60323.com 棋牌'), true);
+  assert.equal(isKnownAdText('60323 . COM'), true);
+});
+
+test('does not treat subtitles or generic advertisement words as known ads', () => {
+  assert.equal(isKnownAdText('可最终却为了同族性命选择放弃'), false);
+  assert.equal(isKnownAdText('官网 棋牌 电子 บาคาร่า'), false);
+  assert.equal(isKnownAdText(null), false);
+});
+
+test('accepts a compact candidate in the player lower-right quadrant', () => {
+  const player = { getBoundingClientRect: () => rect(0, 100, 1000, 500) };
+  const candidate = { getBoundingClientRect: () => rect(700, 400, 250, 150) };
+  assert.equal(isBottomRightAdCandidate(candidate, player), true);
+});
+
+test('rejects candidates outside the lower-right quadrant or larger than 45 percent', () => {
+  const player = { getBoundingClientRect: () => rect(0, 0, 1000, 500) };
+  const subtitle = { getBoundingClientRect: () => rect(250, 400, 400, 50) };
+  const oversized = { getBoundingClientRect: () => rect(500, 250, 500, 250) };
+  assert.equal(isBottomRightAdCandidate(subtitle, player), false);
+  assert.equal(isBottomRightAdCandidate(oversized, player), false);
+});
+
+test('rejects invalid rectangles without throwing', () => {
+  const player = { getBoundingClientRect: () => rect(0, 0, 1000, 500) };
+  assert.equal(isBottomRightAdCandidate({ getBoundingClientRect: () => rect(700, 400, 0, 0) }, player), false);
+  assert.equal(isBottomRightAdCandidate({}, player), false);
 });
 
 test('seeks forward by the requested amount', () => {

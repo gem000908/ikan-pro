@@ -17,6 +17,39 @@
   const SAVE_INTERVAL_MS = 5000;
   const BUTTON_ATTRIBUTE = 'data-ikanbot-seek';
 
+  function isKnownAdText(value) {
+    if (typeof value !== 'string') return false;
+    return value.replace(/\s+/g, '').toLowerCase().includes('60323.com');
+  }
+
+  function readRect(element) {
+    try {
+      if (!element || typeof element.getBoundingClientRect !== 'function') return null;
+      const value = element.getBoundingClientRect();
+      const left = Number(value.left);
+      const top = Number(value.top);
+      const width = Number(value.width);
+      const height = Number(value.height);
+      if (![left, top, width, height].every(Number.isFinite) || width <= 0 || height <= 0) return null;
+      return { left, top, width, height };
+    } catch (_error) {
+      return null;
+    }
+  }
+
+  function isBottomRightAdCandidate(element, player) {
+    const candidateRect = readRect(element);
+    const playerRect = readRect(player);
+    if (!candidateRect || !playerRect) return false;
+    if (candidateRect.width > playerRect.width * 0.45
+      || candidateRect.height > playerRect.height * 0.45) return false;
+
+    const centerX = candidateRect.left + candidateRect.width / 2;
+    const centerY = candidateRect.top + candidateRect.height / 2;
+    return centerX >= playerRect.left + playerRect.width / 2
+      && centerY >= playerRect.top + playerRect.height / 2;
+  }
+
   function getPageId(urlValue) {
     try {
       const url = new URL(urlValue);
@@ -301,6 +334,8 @@
   const api = {
     getPageId,
     makeStorageKey,
+    isKnownAdText,
+    isBottomRightAdCandidate,
     seekBy,
     isEditableTarget,
     isInteractiveTarget,
