@@ -7,6 +7,8 @@ const {
   makeStorageKey,
   isKnownAdText,
   isBottomRightAdCandidate,
+  findAdContainer,
+  hidePlayerAds,
   seekBy,
   isEditableTarget,
   isInteractiveTarget,
@@ -29,6 +31,21 @@ function memoryStorage(initial = {}) {
 
 function rect(left, top, width, height) {
   return { left, top, right: left + width, bottom: top + height, width, height };
+}
+
+function adElement({ text = '', box, tagName = 'DIV', protectedChild = false } = {}) {
+  return {
+    textContent: text,
+    tagName,
+    parentElement: null,
+    attributes: {},
+    getBoundingClientRect: () => box,
+    querySelector(selector) {
+      return protectedChild && selector === 'video, .vjs-control-bar' ? {} : null;
+    },
+    setAttribute(name, value) { this.attributes[name] = String(value); },
+    hasAttribute(name) { return Object.hasOwn(this.attributes, name); },
+  };
 }
 
 test('extracts the play-page id', () => {
@@ -73,6 +90,48 @@ test('rejects invalid rectangles without throwing', () => {
   const player = { getBoundingClientRect: () => rect(0, 0, 1000, 500) };
   assert.equal(isBottomRightAdCandidate({ getBoundingClientRect: () => rect(700, 400, 0, 0) }, player), false);
   assert.equal(isBottomRightAdCandidate({}, player), false);
+});
+
+test('selects the outermost compact matching ad container below the player root', () => {
+  const player = adElement({ text: '60323.com', box: rect(0, 0, 1000, 500) });
+  const outer = adElement({ text: '官网 60323.com 棋牌', box: rect(650, 300, 320, 180) });
+  const inner = adElement({ text: '60323.com', box: rect(720, 340, 180, 60) });
+  inner.parentElement = outer;
+  outer.parentElement = player;
+  assert.equal(findAdContainer(inner, player), outer);
+});
+
+test('does not select the player root or a container with protected player content', () => {
+  const player = adElement({ text: '60323.com', box: rect(0, 0, 1000, 500) });
+  const protectedContainer = adElement({
+    text: '60323.com',
+    box: rect(650, 300, 320, 180),
+    protectedChild: true,
+  });
+  const inner = adElement({ text: '60323.com', box: rect(720, 340, 180, 60) });
+  inner.parentElement = protectedContainer;
+  protectedContainer.parentElement = player;
+  assert.equal(findAdContainer(inner, player), inner);
+  assert.equal(findAdContainer(player, player), null);
+});
+
+test('marks only a known lower-right ad and is idempotent', () => {
+  const player = adElement({ text: '', box: rect(0, 0, 1000, 500) });
+  const ad = adElement({ text: '官网 60323.com 棋牌', box: rect(650, 300, 320, 180) });
+  const subtitle = adElement({ text: '可最终却为了同族性命选择放弃', box: rect(300, 400, 400, 50) });
+  ad.parentElement = player;
+  subtitle.parentElement = player;
+  player.querySelectorAll = selector => selector === '*' ? [ad, subtitle] : [];
+
+  assert.equal(hidePlayerAds(player), 1);
+  assert.equal(ad.hasAttribute('data-ikanbot-hidden-ad'), true);
+  assert.equal(subtitle.hasAttribute('data-ikanbot-hidden-ad'), false);
+  assert.equal(hidePlayerAds(player), 0);
+});
+
+test('does nothing when a player cannot be scanned', () => {
+  assert.equal(hidePlayerAds(null), 0);
+  assert.equal(hidePlayerAds({}), 0);
 });
 
 test('seeks forward by the requested amount', () => {

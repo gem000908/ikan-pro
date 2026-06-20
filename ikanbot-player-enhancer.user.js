@@ -16,6 +16,7 @@
   const END_CLEAR_SECONDS = 30;
   const SAVE_INTERVAL_MS = 5000;
   const BUTTON_ATTRIBUTE = 'data-ikanbot-seek';
+  const HIDDEN_AD_ATTRIBUTE = 'data-ikanbot-hidden-ad';
 
   function isKnownAdText(value) {
     if (typeof value !== 'string') return false;
@@ -48,6 +49,60 @@
     const centerY = candidateRect.top + candidateRect.height / 2;
     return centerX >= playerRect.left + playerRect.width / 2
       && centerY >= playerRect.top + playerRect.height / 2;
+  }
+
+  function containsProtectedPlayerContent(element) {
+    const tagName = String(element && element.tagName || '').toUpperCase();
+    if (tagName === 'VIDEO') return true;
+    try {
+      return typeof element.querySelector === 'function'
+        && Boolean(element.querySelector('video, .vjs-control-bar'));
+    } catch (_error) {
+      return true;
+    }
+  }
+
+  function isSafeAdContainer(element, player) {
+    return element && element !== player
+      && isKnownAdText(element.textContent)
+      && isBottomRightAdCandidate(element, player)
+      && !containsProtectedPlayerContent(element);
+  }
+
+  function findAdContainer(element, player) {
+    if (!isSafeAdContainer(element, player)) return null;
+    let target = element;
+    let parent = element.parentElement;
+    while (parent && parent !== player && isSafeAdContainer(parent, player)) {
+      target = parent;
+      parent = parent.parentElement;
+    }
+    return target;
+  }
+
+  function hidePlayerAds(player) {
+    if (!player || typeof player.querySelectorAll !== 'function') return 0;
+    let hiddenCount = 0;
+    let elements;
+    try {
+      elements = player.querySelectorAll('*');
+    } catch (_error) {
+      return 0;
+    }
+
+    elements.forEach((element) => {
+      if (!isKnownAdText(element.textContent)) return;
+      const target = findAdContainer(element, player);
+      if (!target || (typeof target.hasAttribute === 'function'
+        && target.hasAttribute(HIDDEN_AD_ATTRIBUTE))) return;
+      try {
+        target.setAttribute(HIDDEN_AD_ATTRIBUTE, '');
+        hiddenCount += 1;
+      } catch (_error) {
+        // Ignore individual malformed or inaccessible nodes.
+      }
+    });
+    return hiddenCount;
   }
 
   function getPageId(urlValue) {
@@ -336,6 +391,8 @@
     makeStorageKey,
     isKnownAdText,
     isBottomRightAdCandidate,
+    findAdContainer,
+    hidePlayerAds,
     seekBy,
     isEditableTarget,
     isInteractiveTarget,
