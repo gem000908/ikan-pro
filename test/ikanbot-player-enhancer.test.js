@@ -25,7 +25,7 @@ const {
 test('declares versioned GitHub update metadata', () => {
   const source = readFileSync(join(__dirname, '..', 'ikanbot-player-enhancer.user.js'), 'utf8');
 
-  assert.match(source, /^\/\/ @version\s+1\.2\.1$/m);
+  assert.match(source, /^\/\/ @version\s+1\.2\.2$/m);
   assert.match(source, /^\/\/ @updateURL\s+https:\/\/cdn\.jsdelivr\.net\/gh\/gem000908\/ikan-pro@main\/ikanbot-player-enhancer\.user\.js$/m);
   assert.match(source, /^\/\/ @downloadURL\s+https:\/\/cdn\.jsdelivr\.net\/gh\/gem000908\/ikan-pro@main\/ikanbot-player-enhancer\.user\.js$/m);
 });
@@ -337,7 +337,15 @@ test('player synchronization does not mutate an already enhanced control bar', (
   bootstrap(windowObject, documentObject);
   assert.match(
     appendedStyle.textContent,
-    /\.video-js \.vjs-control-bar \.vjs-seek-button:not\(\[data-ikanbot-seek\]\)\{display:none!important\}/,
+    /\.video-js \.vjs-control-bar \[class\*="vjs-skip-backward-"\]:not\(\[data-ikanbot-seek\]\)/,
+  );
+  assert.match(
+    appendedStyle.textContent,
+    /\.video-js \.vjs-control-bar \[class\*="vjs-skip-forward-"\]:not\(\[data-ikanbot-seek\]\)/,
+  );
+  assert.match(
+    appendedStyle.textContent,
+    /\.video-js \.vjs-control-bar \.vjs-seek-button:not\(\[data-ikanbot-seek\]\)/,
   );
   assert.equal(insertionCount, 2);
   assert.equal(microtasks.length, 1);

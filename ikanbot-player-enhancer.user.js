@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         ikanbot 播放器增强
 // @namespace    https://www1.ikanbot.com/
-// @version      1.2.1
+// @version      1.2.2
 // @description  增强 ikanbot 播放控制、观看进度，并隐藏已识别的播放器右下角广告
 // @match        https://www1.ikanbot.com/play/*
 // @updateURL    https://cdn.jsdelivr.net/gh/gem000908/ikan-pro@main/ikanbot-player-enhancer.user.js
@@ -352,7 +352,7 @@
       style.setAttribute('data-ikanbot-player-enhancer', '');
       style.textContent = [
         '.ikanbot-seek-button .ikanbot-seek-label{font-size:1.15em;font-weight:600;line-height:1;white-space:nowrap}',
-        '.video-js .vjs-control-bar .vjs-seek-button:not([data-ikanbot-seek]){display:none!important}',
+        '.video-js .vjs-control-bar [class*="vjs-skip-backward-"]:not([data-ikanbot-seek]),.video-js .vjs-control-bar [class*="vjs-skip-forward-"]:not([data-ikanbot-seek]),.video-js .vjs-control-bar .vjs-seek-button:not([data-ikanbot-seek]){display:none!important}',
         `[${HIDDEN_AD_ATTRIBUTE}]{display:none!important}`,
       ].join('');
       (documentObject.head || documentObject.documentElement).appendChild(style);
