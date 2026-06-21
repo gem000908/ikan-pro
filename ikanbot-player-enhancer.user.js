@@ -350,6 +350,7 @@
       style.setAttribute('data-ikanbot-player-enhancer', '');
       style.textContent = [
         '.ikanbot-seek-button .ikanbot-seek-label{font-size:1.15em;font-weight:600;line-height:1;white-space:nowrap}',
+        '.video-js .vjs-control-bar .vjs-seek-button:not([data-ikanbot-seek]){display:none!important}',
         `[${HIDDEN_AD_ATTRIBUTE}]{display:none!important}`,
       ].join('');
       (documentObject.head || documentObject.documentElement).appendChild(style);

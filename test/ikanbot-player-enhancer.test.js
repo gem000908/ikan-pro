@@ -243,6 +243,7 @@ test('player synchronization does not mutate an already enhanced control bar', (
   const microtasks = [];
   let mutationCallback = null;
   let insertionCount = 0;
+  let appendedStyle = null;
 
   const controlBar = {
     children: [],
@@ -304,7 +305,7 @@ test('player synchronization does not mutate an already enhanced control bar', (
   const player = { querySelector: selector => selector === 'video' ? video : null };
   const documentObject = {
     documentElement: {},
-    head: { appendChild() {} },
+    head: { appendChild(node) { appendedStyle = node; } },
     visibilityState: 'visible',
     createElement: makeElement,
     addEventListener() {},
@@ -324,6 +325,10 @@ test('player synchronization does not mutate an already enhanced control bar', (
   };
 
   bootstrap(windowObject, documentObject);
+  assert.match(
+    appendedStyle.textContent,
+    /\.video-js \.vjs-control-bar \.vjs-seek-button:not\(\[data-ikanbot-seek\]\)\{display:none!important\}/,
+  );
   assert.equal(insertionCount, 2);
   assert.equal(microtasks.length, 1);
 
