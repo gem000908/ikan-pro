@@ -4,7 +4,7 @@
 
 **Goal:** Make Tampermonkey detect and download future releases from the repository's `main` branch.
 
-**Architecture:** Keep update behavior entirely in the userscript metadata block. Add a source-level regression test that reads the actual `.user.js` file so version and remote URLs cannot drift unnoticed.
+**Architecture:** Keep update behavior entirely in the userscript metadata block. Use jsDelivr because it is reachable in the target environment while `raw.githubusercontent.com` is not. Add a source-level regression test that reads the actual `.user.js` file so version and remote URLs cannot drift unnoticed.
 
 **Tech Stack:** Tampermonkey metadata, JavaScript, Node.js built-in test runner
 
@@ -37,8 +37,8 @@ test('declares versioned GitHub update metadata', () => {
   const source = readFileSync(join(__dirname, '..', 'ikanbot-player-enhancer.user.js'), 'utf8');
 
   assert.match(source, /^\/\/ @version\s+1\.2\.1$/m);
-  assert.match(source, /^\/\/ @updateURL\s+https:\/\/raw\.githubusercontent\.com\/gem000908\/ikan-pro\/main\/ikanbot-player-enhancer\.user\.js$/m);
-  assert.match(source, /^\/\/ @downloadURL\s+https:\/\/raw\.githubusercontent\.com\/gem000908\/ikan-pro\/main\/ikanbot-player-enhancer\.user\.js$/m);
+  assert.match(source, /^\/\/ @updateURL\s+https:\/\/cdn\.jsdelivr\.net\/gh\/gem000908\/ikan-pro@main\/ikanbot-player-enhancer\.user\.js$/m);
+  assert.match(source, /^\/\/ @downloadURL\s+https:\/\/cdn\.jsdelivr\.net\/gh\/gem000908\/ikan-pro@main\/ikanbot-player-enhancer\.user\.js$/m);
 });
 ```
 
@@ -58,8 +58,8 @@ Update the userscript header to include:
 
 ```js
 // @version      1.2.1
-// @updateURL    https://raw.githubusercontent.com/gem000908/ikan-pro/main/ikanbot-player-enhancer.user.js
-// @downloadURL  https://raw.githubusercontent.com/gem000908/ikan-pro/main/ikanbot-player-enhancer.user.js
+// @updateURL    https://cdn.jsdelivr.net/gh/gem000908/ikan-pro@main/ikanbot-player-enhancer.user.js
+// @downloadURL  https://cdn.jsdelivr.net/gh/gem000908/ikan-pro@main/ikanbot-player-enhancer.user.js
 ```
 
 Keep `@grant`, `@match`, and all runtime code unchanged.

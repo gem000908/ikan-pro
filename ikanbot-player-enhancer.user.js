@@ -1,9 +1,11 @@
 // ==UserScript==
 // @name         ikanbot 播放器增强
 // @namespace    https://www1.ikanbot.com/
-// @version      1.2.0
+// @version      1.2.1
 // @description  增强 ikanbot 播放控制、观看进度，并隐藏已识别的播放器右下角广告
 // @match        https://www1.ikanbot.com/play/*
+// @updateURL    https://cdn.jsdelivr.net/gh/gem000908/ikan-pro@main/ikanbot-player-enhancer.user.js
+// @downloadURL  https://cdn.jsdelivr.net/gh/gem000908/ikan-pro@main/ikanbot-player-enhancer.user.js
 // @run-at       document-start
 // @grant        none
 // ==/UserScript==

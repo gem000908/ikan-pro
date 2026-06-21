@@ -2,6 +2,8 @@
 
 const test = require('node:test');
 const assert = require('node:assert/strict');
+const { readFileSync } = require('node:fs');
+const { join } = require('node:path');
 const {
   getPageId,
   makeStorageKey,
@@ -19,6 +21,14 @@ const {
   restoreProgress,
   bootstrap,
 } = require('../ikanbot-player-enhancer.user.js');
+
+test('declares versioned GitHub update metadata', () => {
+  const source = readFileSync(join(__dirname, '..', 'ikanbot-player-enhancer.user.js'), 'utf8');
+
+  assert.match(source, /^\/\/ @version\s+1\.2\.1$/m);
+  assert.match(source, /^\/\/ @updateURL\s+https:\/\/cdn\.jsdelivr\.net\/gh\/gem000908\/ikan-pro@main\/ikanbot-player-enhancer\.user\.js$/m);
+  assert.match(source, /^\/\/ @downloadURL\s+https:\/\/cdn\.jsdelivr\.net\/gh\/gem000908\/ikan-pro@main\/ikanbot-player-enhancer\.user\.js$/m);
+});
 
 function memoryStorage(initial = {}) {
   const values = new Map(Object.entries(initial));
